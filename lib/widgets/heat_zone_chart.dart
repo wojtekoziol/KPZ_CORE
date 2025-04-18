@@ -1,12 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kpz_core/controllers/workout_controller.dart';
 import 'package:kpz_core/widgets/widget_size.dart';
-import 'package:provider/provider.dart';
 
-class HeatZoneChart extends HookWidget {
+class HeatZoneChart extends StatefulWidget {
   const HeatZoneChart({
     super.key,
     required this.zone1Duration,
@@ -17,6 +15,13 @@ class HeatZoneChart extends HookWidget {
   final Duration zone1Duration;
   final Duration zone2Duration;
   final Duration zone3Duration;
+
+  @override
+  State<HeatZoneChart> createState() => _HeatZoneChartState();
+}
+
+class _HeatZoneChartState extends State<HeatZoneChart> {
+  Size mainChartSize = Size.zero;
 
   Widget _zoneBar({
     required String label,
@@ -66,11 +71,11 @@ class HeatZoneChart extends HookWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mainChartSize = useState(Size.zero);
-
     return WidgetSize(
       onChange: (Size size) {
-        mainChartSize.value = size;
+        setState(() {
+          mainChartSize = size;
+        });
       },
       child: Container(
         decoration: BoxDecoration(
@@ -94,27 +99,27 @@ class HeatZoneChart extends HookWidget {
                   Expanded(
                     child: _zoneBar(
                       label: 'Chilly',
-                      zoneDuration: zone1Duration,
+                      zoneDuration: widget.zone1Duration,
                       color: Colors.blue,
-                      mainChartSize: mainChartSize.value,
+                      mainChartSize: mainChartSize,
                       context: context,
                     ),
                   ),
                   Expanded(
                     child: _zoneBar(
                       label: 'Optimal',
-                      zoneDuration: zone2Duration,
+                      zoneDuration: widget.zone2Duration,
                       color: Colors.green,
-                      mainChartSize: mainChartSize.value,
+                      mainChartSize: mainChartSize,
                       context: context,
                     ),
                   ),
                   Expanded(
                     child: _zoneBar(
                       label: 'Overheating',
-                      zoneDuration: zone3Duration,
+                      zoneDuration: widget.zone3Duration,
                       color: Colors.red,
-                      mainChartSize: mainChartSize.value,
+                      mainChartSize: mainChartSize,
                       context: context,
                     ),
                   ),
@@ -135,9 +140,9 @@ class HeatZoneChart extends HookWidget {
             max(
               1,
               [
-                zone1Duration.inSeconds,
-                zone2Duration.inSeconds,
-                zone3Duration.inSeconds,
+                widget.zone1Duration.inSeconds,
+                widget.zone2Duration.inSeconds,
+                widget.zone3Duration.inSeconds,
               ].reduce(max),
             )) *
         maxHeight *

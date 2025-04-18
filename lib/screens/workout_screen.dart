@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kpz_core/controllers/workout_controller.dart';
-import 'package:kpz_core/models/workout.dart';
 import 'package:kpz_core/screens/workout_stats_screen.dart';
 import 'package:kpz_core/widgets/heat_zone_chart.dart';
 import 'package:provider/provider.dart';

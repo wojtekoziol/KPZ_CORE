@@ -24,7 +24,12 @@ class _HomeScreenState extends State<HomeScreen> {
         ),
         centerTitle: true,
         actions: [
-          IconButton(onPressed: () {}, icon: Icon(Icons.bluetooth_connected)),
+          IconButton(
+            onPressed: () {
+              _connectToBluetooth();
+            },
+            icon: Icon(Icons.bluetooth_connected),
+          ),
         ],
       ),
       body: FutureBuilder(
@@ -78,4 +83,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _fetchWorkouts() async {}
+
+  Future<void> _connectToBluetooth() async {}
 }

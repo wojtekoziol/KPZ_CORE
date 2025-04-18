@@ -10,8 +10,8 @@ class WorkoutController extends ChangeNotifier {
   }
 
   // Variables
-  double _coreTemperature = 38.6;
-  int _heartRate = 122;
+  final double _coreTemperature = 38.6;
+  final int _heartRate = 122;
 
   Timer? _timer;
   Duration _elapsedTime = Duration.zero;
