@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
+import 'package:kpz_core/controllers/bluetooth_controller.dart';
 import 'package:kpz_core/controllers/workout_controller.dart';
 import 'package:kpz_core/screens/workout_stats_screen.dart';
 import 'package:kpz_core/widgets/heat_zone_chart.dart';
@@ -59,12 +60,23 @@ class WorkoutScreen extends HookWidget {
                           fontSize: 20,
                         ),
                       ),
-                      Text(
-                        '38,6 °C',
-                        style: TextStyle(
-                          fontSize: 36,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      StreamBuilder(
+                        stream:
+                            context
+                                .read<BluetoothController>()
+                                .skinTemperatureStream,
+                        builder: (context, snapshot) {
+                          if (snapshot.hasData) {
+                            return Text(
+                              '${snapshot.data} °C',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            );
+                          }
+                          return Text('No Data');
+                        },
                       ),
                     ],
                   ),
@@ -103,15 +115,23 @@ class WorkoutScreen extends HookWidget {
                                   ),
                                 ),
                                 SizedBox(width: 4),
-                                Consumer<WorkoutController>(
-                                  builder:
-                                      (context, controller, child) => Text(
-                                        controller.heartRate.toString(),
+                                StreamBuilder(
+                                  stream:
+                                      context
+                                          .read<BluetoothController>()
+                                          .heartRateStream,
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      Text(
+                                        '${snapshot.data}',
                                         style: TextStyle(
                                           fontSize: 32,
                                           fontWeight: FontWeight.bold,
                                         ),
-                                      ),
+                                      );
+                                    }
+                                    return Text('No Data');
+                                  },
                                 ),
                               ],
                             ),

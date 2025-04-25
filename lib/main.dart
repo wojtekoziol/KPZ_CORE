@@ -5,7 +5,7 @@ import 'package:kpz_core/screens/home_screen.dart';
 import 'package:provider/provider.dart';
 
 void main() {
-  FlutterBluePlus.setLogLevel(LogLevel.verbose, color: false);
+  FlutterBluePlus.setLogLevel(LogLevel.none, color: false);
   runApp(const MyApp());
 }
 

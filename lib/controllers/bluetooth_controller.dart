@@ -2,8 +2,8 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 enum BluetoothStatus { unavailable, available, connecting, connected }
 
@@ -12,7 +12,7 @@ class BluetoothController extends ChangeNotifier {
     _init();
   }
 
-  final _deviceName = "XIAO";
+  final _deviceName = "XIAO_MG24 Server";
 
   BluetoothDevice? _device;
   StreamSubscription<BluetoothAdapterState>? _stateSubscription;
@@ -21,8 +21,14 @@ class BluetoothController extends ChangeNotifier {
   BluetoothStatus _status = BluetoothStatus.unavailable;
   BluetoothStatus get status => _status;
 
-  Stream? _valueStream;
-  Stream? get valueStream => _valueStream;
+  Stream<int>? _heartRateStream;
+  Stream<int>? get heartRateStream => _heartRateStream;
+  Stream<double>? _skinTemperatureStream;
+  Stream<double>? get skinTemperatureStream => _skinTemperatureStream;
+  Stream<double>? _ambientTemperatureStream;
+  Stream<double>? get ambientTemperatureStream => _ambientTemperatureStream;
+
+  String receivedData = "";
 
   Future<void> _init() async {
     if (await FlutterBluePlus.isSupported == false) {
@@ -55,69 +61,103 @@ class BluetoothController extends ChangeNotifier {
       return;
     }
 
-    var subscription = FlutterBluePlus.onScanResults.listen((results) {
+    final scanResultsSubscription = FlutterBluePlus.onScanResults.listen((
+      results,
+    ) {
       if (results.isNotEmpty) {
         final device = results.last.device;
         _connectToDevice(device);
       }
     });
 
-    FlutterBluePlus.cancelWhenScanComplete(subscription);
+    FlutterBluePlus.cancelWhenScanComplete(scanResultsSubscription);
+
+    _status = BluetoothStatus.connecting;
+    notifyListeners();
 
     await FlutterBluePlus.startScan(
-      withServices: [Guid("180D")],
       withNames: [_deviceName],
-      timeout: Duration(seconds: 15),
+      timeout: Duration(seconds: 5),
     );
 
     await FlutterBluePlus.isScanning.where((val) => val == false).first;
+
+    if (_status == BluetoothStatus.connecting) {
+      _status = BluetoothStatus.available;
+      notifyListeners();
+    }
   }
 
   Future<void> _connectToDevice(BluetoothDevice device) async {
     if (_status == BluetoothStatus.connected) {
       return;
     }
-    _device = device;
 
     _status = BluetoothStatus.connecting;
     notifyListeners();
 
-    await device.connect(autoConnect: true, mtu: null);
+    _device = device;
+
+    await device.connect(autoConnect: true);
 
     _connectionSubscription = device.connectionState.listen((state) async {
-      if (state == BluetoothConnectionState.connected) {
-        _status = BluetoothStatus.connected;
-        notifyListeners();
-
-        _saveDeviceToMemory(device);
-
-        final services = await device.discoverServices();
-        for (final service in services) {
-          final characteristics = service.characteristics;
-          if (characteristics.isNotEmpty) {
-            _valueStream = characteristics.first.onValueReceived;
-          }
-        }
-      } else {
+      if (state != BluetoothConnectionState.connected) {
         _status = BluetoothStatus.available;
         notifyListeners();
+        return;
+      }
+
+      _status = BluetoothStatus.connected;
+      notifyListeners();
+
+      _saveDeviceToMemory(device);
+
+      final services = await device.discoverServices();
+      for (final service in services) {
+        for (final characteristic in service.characteristics) {
+          // TODO: Implement mapping of characteristics to streams
+          _heartRateStream = characteristic.onValueReceived.map((value) => 122);
+          _skinTemperatureStream = characteristic.onValueReceived.map(
+            (value) => 36.5,
+          );
+          _ambientTemperatureStream = characteristic.onValueReceived.map(
+            (value) => 25.0,
+          );
+
+          // TODO: Delete when streams are implemented
+          final subscription = characteristic.onValueReceived.listen((value) {
+            receivedData = value.toString();
+            notifyListeners();
+          });
+          device.cancelWhenDisconnected(subscription);
+
+          await characteristic.setNotifyValue(true);
+        }
       }
     });
   }
 
   Future<BluetoothDevice?> _getDeviceFromMemory() async {
-    return null;
+    final prefs = await SharedPreferences.getInstance();
+    final remoteId = prefs.getString('remoteId');
+    if (remoteId == null) return null;
+    return BluetoothDevice.fromId(remoteId);
   }
 
   Future<void> _saveDeviceToMemory(BluetoothDevice device) async {
-    // https://pub.dev/packages/flutter_blue_plus#save-device
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('remoteId', device.remoteId.str);
+  }
+
+  Future<void> disconnect() async {
+    await _device?.disconnect();
+    _connectionSubscription?.cancel();
   }
 
   @override
   void dispose() async {
-    await _device?.disconnect();
+    await disconnect();
     _stateSubscription?.cancel();
-    _connectionSubscription?.cancel();
     super.dispose();
   }
 }

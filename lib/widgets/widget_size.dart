@@ -8,6 +8,7 @@ class WidgetSize extends StatefulWidget {
   const WidgetSize({super.key, required this.onChange, required this.child});
 
   @override
+  // ignore: library_private_types_in_public_api
   _WidgetSizeState createState() => _WidgetSizeState();
 }
 
@@ -18,8 +19,8 @@ class _WidgetSizeState extends State<WidgetSize> {
     return Container(key: widgetKey, child: widget.child);
   }
 
-  var widgetKey = GlobalKey();
-  var oldSize;
+  final widgetKey = GlobalKey();
+  Size? oldSize;
 
   void postFrameCallback(_) {
     var context = widgetKey.currentContext;

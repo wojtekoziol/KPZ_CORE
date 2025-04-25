@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kpz_core/controllers/bluetooth_controller.dart';
 import 'package:kpz_core/controllers/workout_controller.dart';
 import 'package:kpz_core/models/workout.dart';
 import 'package:kpz_core/screens/workout_screen.dart';
@@ -18,17 +19,42 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text(
-          'KPZ CORE',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        // TODO: Change when characteristics are implemented
+        title: Consumer<BluetoothController>(
+          builder:
+              (context, value, child) => Text(
+                value.receivedData,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
         ),
         centerTitle: true,
         actions: [
           IconButton(
             onPressed: () {
-              _connectToBluetooth();
+              final bluetoothController = context.read<BluetoothController>();
+              if (bluetoothController.status == BluetoothStatus.connected) {
+                bluetoothController.disconnect();
+              } else {
+                context.read<BluetoothController>().connect();
+              }
             },
-            icon: Icon(Icons.bluetooth_connected),
+            icon: Consumer<BluetoothController>(
+              builder: (context, value, child) {
+                switch (value.status) {
+                  case BluetoothStatus.unavailable:
+                    return const Icon(Icons.bluetooth_disabled);
+                  case BluetoothStatus.available:
+                    return const Icon(Icons.bluetooth_connected);
+                  case BluetoothStatus.connecting:
+                    return const CircularProgressIndicator();
+                  case BluetoothStatus.connected:
+                    return const Icon(
+                      Icons.bluetooth_connected,
+                      color: Colors.green,
+                    );
+                }
+              },
+            ),
           ),
         ],
       ),
@@ -47,6 +73,7 @@ class _HomeScreenState extends State<HomeScreen> {
             itemBuilder: (context, index) {
               final workout = workoutHistory[index];
               return Text('Workout $index');
+              // TODO: Implement the workout list item
               // return ListTile(
               //   title: Text(workout.name),
               //   subtitle: Text(workout.date.toString()),
@@ -63,26 +90,34 @@ class _HomeScreenState extends State<HomeScreen> {
           );
         },
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder:
-                  (context) => ChangeNotifierProvider(
-                    create: (context) => WorkoutController(),
-                    child: const WorkoutScreen(),
-                  ),
-            ),
+      floatingActionButton: Consumer<BluetoothController>(
+        builder: (context, bluetoothController, child) {
+          if (bluetoothController.status != BluetoothStatus.connected) {
+            return const SizedBox.shrink();
+          }
+
+          return FloatingActionButton.extended(
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder:
+                      (context) => ChangeNotifierProvider(
+                        create: (context) => WorkoutController(),
+                        child: const WorkoutScreen(),
+                      ),
+                ),
+              );
+            },
+            label: const Text('Start Workout'),
+            icon: const Icon(Icons.fitness_center),
           );
         },
-        label: const Text('Start Workout'),
-        icon: const Icon(Icons.fitness_center),
       ),
     );
   }
 
-  Future<void> _fetchWorkouts() async {}
-
-  Future<void> _connectToBluetooth() async {}
+  Future<void> _fetchWorkouts() async {
+    // TODO: Implement the logic to fetch workouts
+  }
 }

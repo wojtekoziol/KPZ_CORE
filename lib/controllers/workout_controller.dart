@@ -48,6 +48,7 @@ class WorkoutController extends ChangeNotifier {
   }
 
   Workout generateWorkoutModel() {
+    // TODO: Implement the logic to generate and save a workout model
     return Workout();
   }
 
