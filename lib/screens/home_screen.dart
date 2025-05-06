@@ -19,14 +19,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        // TODO: Change when characteristics are implemented
-        title: Consumer<BluetoothController>(
-          builder:
-              (context, value, child) => Text(
-                value.receivedData,
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-        ),
+        title: Text('KPZ Core', style: TextStyle(fontWeight: FontWeight.bold)),
         centerTitle: true,
         actions: [
           IconButton(

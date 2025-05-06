@@ -28,8 +28,6 @@ class BluetoothController extends ChangeNotifier {
   Stream<double>? _ambientTemperatureStream;
   Stream<double>? get ambientTemperatureStream => _ambientTemperatureStream;
 
-  String receivedData = "";
-
   Future<void> _init() async {
     if (await FlutterBluePlus.isSupported == false) {
       return;
@@ -115,21 +113,15 @@ class BluetoothController extends ChangeNotifier {
       final services = await device.discoverServices();
       for (final service in services) {
         for (final characteristic in service.characteristics) {
-          // TODO: Implement mapping of characteristics to streams
-          _heartRateStream = characteristic.onValueReceived.map((value) => 122);
           _skinTemperatureStream = characteristic.onValueReceived.map(
-            (value) => 36.5,
+            (value) => double.parse(String.fromCharCodes(value).split('/')[0]),
           );
           _ambientTemperatureStream = characteristic.onValueReceived.map(
-            (value) => 25.0,
+            (value) => double.parse(String.fromCharCodes(value).split('/')[1]),
           );
-
-          // TODO: Delete when streams are implemented
-          final subscription = characteristic.onValueReceived.listen((value) {
-            receivedData = value.toString();
-            notifyListeners();
-          });
-          device.cancelWhenDisconnected(subscription);
+          _heartRateStream = characteristic.onValueReceived.map(
+            (value) => int.parse(String.fromCharCodes(value).split('/')[2]),
+          );
 
           await characteristic.setNotifyValue(true);
         }

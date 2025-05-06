@@ -56,6 +56,14 @@ class WorkoutController extends ChangeNotifier {
     return '${time.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(time.inSeconds.remainder(60)).toString().padLeft(2, '0')}';
   }
 
+  static double calculateCoreTemperature(
+    double heartRate,
+    double skinTemperature,
+    double ambientTemperature,
+  ) {
+    return 0.0;
+  }
+
   @override
   void dispose() {
     _timer?.cancel();
