@@ -3,7 +3,6 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_blue_plus/flutter_blue_plus.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 enum BluetoothStatus { unavailable, available, connecting, connected }
 
@@ -12,7 +11,7 @@ class BluetoothController extends ChangeNotifier {
     _init();
   }
 
-  final _deviceName = "XIAO_MG24 Server";
+  final _deviceName = "XIAO_MG24_TH";
 
   BluetoothDevice? _device;
   StreamSubscription<BluetoothAdapterState>? _stateSubscription;
@@ -53,12 +52,6 @@ class BluetoothController extends ChangeNotifier {
       return;
     }
 
-    final deviceFromMemory = await _getDeviceFromMemory();
-    if (deviceFromMemory != null) {
-      _connectToDevice(deviceFromMemory);
-      return;
-    }
-
     final scanResultsSubscription = FlutterBluePlus.onScanResults.listen((
       results,
     ) {
@@ -79,11 +72,6 @@ class BluetoothController extends ChangeNotifier {
     );
 
     await FlutterBluePlus.isScanning.where((val) => val == false).first;
-
-    if (_status == BluetoothStatus.connecting) {
-      _status = BluetoothStatus.available;
-      notifyListeners();
-    }
   }
 
   Future<void> _connectToDevice(BluetoothDevice device) async {
@@ -96,49 +84,41 @@ class BluetoothController extends ChangeNotifier {
 
     _device = device;
 
-    await device.connect(autoConnect: true);
+    await device.connect(autoConnect: true, mtu: null);
 
     _connectionSubscription = device.connectionState.listen((state) async {
       if (state != BluetoothConnectionState.connected) {
         _status = BluetoothStatus.available;
         notifyListeners();
-        return;
-      }
+      } else {
+        _status = BluetoothStatus.connected;
+        notifyListeners();
 
-      _status = BluetoothStatus.connected;
-      notifyListeners();
+        final services = await device.discoverServices();
+        for (final service in services) {
+          for (final characteristic in service.characteristics) {
+            characteristic.onValueReceived.listen(
+              (event) => print(
+                "${DateTime.now()} ${String.fromCharCodes(event).split('/')}",
+              ),
+            );
+            _skinTemperatureStream = characteristic.onValueReceived.map(
+              (value) =>
+                  double.parse(String.fromCharCodes(value).split('/')[0]),
+            );
+            _ambientTemperatureStream = characteristic.onValueReceived.map(
+              (value) =>
+                  double.parse(String.fromCharCodes(value).split('/')[1]),
+            );
+            _heartRateStream = characteristic.onValueReceived.map(
+              (value) => int.parse(String.fromCharCodes(value).split('/')[2]),
+            );
 
-      _saveDeviceToMemory(device);
-
-      final services = await device.discoverServices();
-      for (final service in services) {
-        for (final characteristic in service.characteristics) {
-          _skinTemperatureStream = characteristic.onValueReceived.map(
-            (value) => double.parse(String.fromCharCodes(value).split('/')[0]),
-          );
-          _ambientTemperatureStream = characteristic.onValueReceived.map(
-            (value) => double.parse(String.fromCharCodes(value).split('/')[1]),
-          );
-          _heartRateStream = characteristic.onValueReceived.map(
-            (value) => int.parse(String.fromCharCodes(value).split('/')[2]),
-          );
-
-          await characteristic.setNotifyValue(true);
+            await characteristic.setNotifyValue(true);
+          }
         }
       }
     });
-  }
-
-  Future<BluetoothDevice?> _getDeviceFromMemory() async {
-    final prefs = await SharedPreferences.getInstance();
-    final remoteId = prefs.getString('remoteId');
-    if (remoteId == null) return null;
-    return BluetoothDevice.fromId(remoteId);
-  }
-
-  Future<void> _saveDeviceToMemory(BluetoothDevice device) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('remoteId', device.remoteId.str);
   }
 
   Future<void> disconnect() async {

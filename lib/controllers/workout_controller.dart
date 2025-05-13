@@ -61,7 +61,8 @@ class WorkoutController extends ChangeNotifier {
     double skinTemperature,
     double ambientTemperature,
   ) {
-    return 0.0;
+    // TODO:
+    return skinTemperature;
   }
 
   @override

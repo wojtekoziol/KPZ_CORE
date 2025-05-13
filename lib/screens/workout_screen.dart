@@ -65,18 +65,29 @@ class WorkoutScreen extends HookWidget {
                             context
                                 .read<BluetoothController>()
                                 .skinTemperatureStream,
-                        builder: (context, snapshot) {
-                          if (snapshot.hasData) {
-                            return Text(
-                              '${snapshot.data} °C',
-                              style: TextStyle(
-                                fontSize: 36,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            );
-                          }
-                          return Text('No Data');
-                        },
+                        builder:
+                            (context, skinTemp) => StreamBuilder(
+                              stream:
+                                  context
+                                      .read<BluetoothController>()
+                                      .ambientTemperatureStream,
+                              builder:
+                                  (context, ambientTemp) => StreamBuilder(
+                                    stream:
+                                        context
+                                            .read<BluetoothController>()
+                                            .heartRateStream,
+                                    builder: (context, heartRate) {
+                                      return Text(
+                                        '${WorkoutController.calculateCoreTemperature(heartRate.data?.toDouble() ?? 0, skinTemp.data ?? 0, ambientTemp.data ?? 0)} °C',
+                                        style: TextStyle(
+                                          fontSize: 36,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                            ),
                       ),
                     ],
                   ),
@@ -120,18 +131,14 @@ class WorkoutScreen extends HookWidget {
                                       context
                                           .read<BluetoothController>()
                                           .heartRateStream,
-                                  builder: (context, snapshot) {
-                                    if (snapshot.hasData) {
-                                      Text(
+                                  builder:
+                                      (context, snapshot) => Text(
                                         '${snapshot.data}',
                                         style: TextStyle(
                                           fontSize: 32,
                                           fontWeight: FontWeight.bold,
                                         ),
-                                      );
-                                    }
-                                    return Text('No Data');
-                                  },
+                                      ),
                                 ),
                               ],
                             ),
