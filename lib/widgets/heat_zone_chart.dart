@@ -134,7 +134,7 @@ class _HeatZoneChartState extends State<HeatZoneChart> {
                 builder:
                     (context, controller, child) => Align(
                       alignment: Alignment(
-                        _calculateAlignmentX(controller.coreTemp),
+                        _calculateAlignmentX(controller.coreTemperature),
                         0,
                       ),
                       child: Icon(

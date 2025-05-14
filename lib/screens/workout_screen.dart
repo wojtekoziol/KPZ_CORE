@@ -60,36 +60,15 @@ class WorkoutScreen extends HookWidget {
                           fontSize: 20,
                         ),
                       ),
-                      StreamBuilder(
-                        stream:
-                            context
-                                .read<BluetoothController>()
-                                .skinTemperatureStream,
-                        builder: (context, skinTemp) {
-                          return StreamBuilder(
-                            stream:
-                                context
-                                    .read<BluetoothController>()
-                                    .ambientTemperatureStream,
-                            builder: (context, ambientTemp) {
-                              return StreamBuilder(
-                                stream:
-                                    context
-                                        .read<BluetoothController>()
-                                        .heartRateStream,
-                                builder: (context, heartRate) {
-                                  return Text(
-                                    '${context.read<WorkoutController>().calculateCoreTemperature(heartRate.data ?? 0, skinTemp.data ?? 0, ambientTemp.data ?? 0)} °C',
-                                    style: TextStyle(
-                                      fontSize: 36,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  );
-                                },
-                              );
-                            },
-                          );
-                        },
+                      Consumer<WorkoutController>(
+                        builder:
+                            (context, controller, child) => Text(
+                              '${controller.coreTemperature} °C',
+                              style: TextStyle(
+                                fontSize: 36,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                       ),
                     ],
                   ),

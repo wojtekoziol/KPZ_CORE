@@ -1,12 +1,11 @@
-// TODO: Implement workout model
 class Workout {
-  List<DateTime> _timestamps = [];
-  List<int> _heartRateData = [];
-  List<double> _skinTempData = [];
-  List<double> _ambientTempData = [];
-  List<double> _coreTempData = [];
+  List<DateTime> timestamps = [];
+  List<int> heartRateData = [];
+  List<double> skinTempData = [];
+  List<double> ambientTempData = [];
+  List<double> coreTempData = [];
 
-  Duration _duration = Duration.zero;
+  Duration duration = Duration.zero;
 
   void addDataEntry({
     required DateTime timestamp,
@@ -15,14 +14,16 @@ class Workout {
     required double ambientTemp,
     required double coreTemp,
   }) {
-    _timestamps.add(timestamp);
-    _heartRateData.add(heartRate);
-    _skinTempData.add(skinTemp);
-    _ambientTempData.add(ambientTemp);
-    _coreTempData.add(coreTemp);
+    timestamps.add(timestamp);
+    heartRateData.add(heartRate);
+    skinTempData.add(skinTemp);
+    ambientTempData.add(ambientTemp);
+    coreTempData.add(coreTemp);
   }
 
   void finish(Duration duration) {
-    _duration = duration;
+    this.duration = duration;
+
+    // TODO: Save workout item
   }
 }

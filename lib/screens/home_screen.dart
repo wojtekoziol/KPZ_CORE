@@ -96,7 +96,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 MaterialPageRoute(
                   builder:
                       (context) => ChangeNotifierProvider(
-                        create: (context) => WorkoutController(),
+                        create:
+                            (context) => WorkoutController(
+                              context.read<BluetoothController>(),
+                            ),
                         child: const WorkoutScreen(),
                       ),
                 ),

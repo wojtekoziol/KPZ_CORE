@@ -1,19 +1,18 @@
 import 'dart:async';
-import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:kpz_core/controllers/bluetooth_controller.dart';
 import 'package:kpz_core/models/workout.dart';
 
 class WorkoutController extends ChangeNotifier {
-  WorkoutController() {
+  WorkoutController(this.bluetoothController) {
     _workout = Workout();
 
     _startTimer();
   }
 
   // Variables
-  final double _coreTemperature = 38.6;
-  final int _heartRate = 122;
+  double _coreTemperature = 36.5;
 
   Timer? _timer;
   Duration _elapsedTime = Duration.zero;
@@ -22,33 +21,30 @@ class WorkoutController extends ChangeNotifier {
   Duration _zone2Time = Duration.zero;
   Duration _zone3Time = Duration.zero;
 
-  double _coreTemp = 36.6;
-
   late Workout _workout;
+  BluetoothController bluetoothController;
 
   // Getters
   double get coreTemperature => _coreTemperature;
-  int get heartRate => _heartRate;
   String get elapsedTime => formatElapsedTime(_elapsedTime);
 
   Duration get zone1Duration => _zone1Time;
   Duration get zone2Duration => _zone2Time;
   Duration get zone3Duration => _zone3Time;
 
-  double get coreTemp => _coreTemp;
-
   void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
       _elapsedTime += Duration(seconds: 1);
       _updateZoneTimes();
+      await _updateCoreTemperature();
       notifyListeners();
     });
   }
 
   void _updateZoneTimes() {
-    if (_coreTemp < 37) {
+    if (_coreTemperature < 37) {
       _zone1Time += Duration(seconds: 1);
-    } else if (_coreTemp < 39) {
+    } else if (_coreTemperature < 39) {
       _zone2Time += Duration(seconds: 1);
     } else {
       _zone3Time += Duration(seconds: 1);
@@ -64,27 +60,38 @@ class WorkoutController extends ChangeNotifier {
     return '${time.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(time.inSeconds.remainder(60)).toString().padLeft(2, '0')}';
   }
 
-  double calculateCoreTemperature(
-    int heartRate,
-    double skinTemperature,
-    double ambientTemperature,
-  ) {
-    _coreTemp =
-        15.35 +
-        (0.648 * skinTemperature) -
-        (0.064 * ambientTemperature) +
-        (0.008 * heartRate) -
-        (0.381 * 1);
+  Future<void> _updateCoreTemperature() async {
+    int heartRate = await bluetoothController.heartRateStream?.last ?? 0;
+    double skinTemp =
+        await bluetoothController.skinTemperatureStream?.last ?? 0;
+    double ambientTemp =
+        await bluetoothController.ambientTemperatureStream?.last ?? 0;
+
+    _coreTemperature = WorkoutController.calculateCoreTemperature(
+      heartRate,
+      skinTemp,
+      ambientTemp,
+    );
 
     _workout.addDataEntry(
       timestamp: DateTime.now(),
       heartRate: heartRate,
-      skinTemp: skinTemperature,
-      ambientTemp: ambientTemperature,
-      coreTemp: _coreTemp,
+      skinTemp: skinTemp,
+      ambientTemp: ambientTemp,
+      coreTemp: _coreTemperature,
     );
+  }
 
-    return _coreTemp;
+  static double calculateCoreTemperature(
+    int heartRate,
+    double skinTemperature,
+    double ambientTemperature,
+  ) {
+    return 15.35 +
+        (0.648 * skinTemperature) -
+        (0.064 * ambientTemperature) +
+        (0.008 * heartRate) -
+        (0.381 * 1);
   }
 
   @override
