@@ -1,8 +1,10 @@
 import 'dart:math';
 
 import 'package:flutter/material.dart';
+import 'package:kpz_core/controllers/bluetooth_controller.dart';
 import 'package:kpz_core/controllers/workout_controller.dart';
 import 'package:kpz_core/widgets/widget_size.dart';
+import 'package:provider/provider.dart';
 
 class HeatZoneChart extends StatefulWidget {
   const HeatZoneChart({
@@ -88,10 +90,60 @@ class _HeatZoneChartState extends State<HeatZoneChart> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                'Heat Zones',
-                style: TextStyle(fontSize: 14, color: Color(0xFFD8D8D8)),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'Heat Zones',
+                    style: TextStyle(fontSize: 14, color: Color(0xFFD8D8D8)),
+                  ),
+                  if (context
+                              .read<BluetoothController>()
+                              .skinTemperatureStream !=
+                          null &&
+                      context
+                              .read<BluetoothController>()
+                              .ambientTemperatureStream !=
+                          null)
+                    StreamBuilder(
+                      stream:
+                          context
+                              .read<BluetoothController>()
+                              .skinTemperatureStream,
+                      builder: (context, skinTemp) {
+                        return StreamBuilder(
+                          stream:
+                              context
+                                  .read<BluetoothController>()
+                                  .ambientTemperatureStream,
+                          builder: (context, ambientTemp) {
+                            return Text(
+                              '(${skinTemp.data} / ${ambientTemp.data})',
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: Color(0xFFD8D8D8),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
+                ],
               ),
+              Consumer<WorkoutController>(
+                builder:
+                    (context, controller, child) => Align(
+                      alignment: Alignment(
+                        _calculateAlignmentX(controller.coreTemp),
+                        0,
+                      ),
+                      child: Icon(
+                        Icons.arrow_downward_rounded,
+                        color: Color(0xFFD8D8D8),
+                      ),
+                    ),
+              ),
+
               Row(
                 crossAxisAlignment: CrossAxisAlignment.end,
                 spacing: 10,
@@ -147,5 +199,38 @@ class _HeatZoneChartState extends State<HeatZoneChart> {
             )) *
         maxHeight *
         0.7;
+  }
+
+  double _calculateAlignmentX(double temperature) {
+    if (temperature <= 36.5) {
+      return -1.0;
+    } else if (temperature >= 39.5) {
+      return 1.0;
+    } else if (temperature == 37.0) {
+      return -0.375;
+    } else if (temperature == 39.0) {
+      return 0.375;
+    } else if (temperature > 36.5 && temperature < 37.0) {
+      // Interpolate between -1.0 (at 36.5) and -0.375 (at 37.0)
+      // Temperature range: 37.0 - 36.5 = 0.5
+      // Value range: -0.375 - (-1.0) = 0.625
+      // Slope = 0.625 / 0.5 = 1.25
+      return -1.0 + (temperature - 36.5) * 1.25;
+    } else if (temperature > 37.0 && temperature < 39.0) {
+      // Interpolate between -0.375 (at 37.0) and 0.375 (at 39.0)
+      // Temperature range: 39.0 - 37.0 = 2.0
+      // Value range: 0.375 - (-0.375) = 0.75
+      // Slope = 0.75 / 2.0 = 0.375
+      return -0.375 + (temperature - 37.0) * 0.375;
+    } else if (temperature > 39.0 && temperature < 39.5) {
+      // Interpolate between 0.375 (at 39.0) and 1.0 (at 39.5)
+      // Temperature range: 39.5 - 39.0 = 0.5
+      // Value range: 1.0 - 0.375 = 0.625
+      // Slope = 0.625 / 0.5 = 1.25
+      return 0.375 + (temperature - 39.0) * 1.25;
+    }
+    // This case should ideally not be reached if the above conditions are exhaustive
+    // for the expected input range, but as a fallback:
+    return 0.0; // Or throw an error, depending on desired behavior for unexpected values
   }
 }

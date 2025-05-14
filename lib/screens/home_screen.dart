@@ -85,9 +85,9 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: Consumer<BluetoothController>(
         builder: (context, bluetoothController, child) {
-          if (bluetoothController.status != BluetoothStatus.connected) {
-            return const SizedBox.shrink();
-          }
+          // if (bluetoothController.status != BluetoothStatus.connected) {
+          //   return const SizedBox.shrink();
+          // }
 
           return FloatingActionButton.extended(
             onPressed: () {

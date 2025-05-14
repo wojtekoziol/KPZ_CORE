@@ -65,29 +65,31 @@ class WorkoutScreen extends HookWidget {
                             context
                                 .read<BluetoothController>()
                                 .skinTemperatureStream,
-                        builder:
-                            (context, skinTemp) => StreamBuilder(
-                              stream:
-                                  context
-                                      .read<BluetoothController>()
-                                      .ambientTemperatureStream,
-                              builder:
-                                  (context, ambientTemp) => StreamBuilder(
-                                    stream:
-                                        context
-                                            .read<BluetoothController>()
-                                            .heartRateStream,
-                                    builder: (context, heartRate) {
-                                      return Text(
-                                        '${WorkoutController.calculateCoreTemperature(heartRate.data?.toDouble() ?? 0, skinTemp.data ?? 0, ambientTemp.data ?? 0)} °C',
-                                        style: TextStyle(
-                                          fontSize: 36,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      );
-                                    },
-                                  ),
-                            ),
+                        builder: (context, skinTemp) {
+                          return StreamBuilder(
+                            stream:
+                                context
+                                    .read<BluetoothController>()
+                                    .ambientTemperatureStream,
+                            builder: (context, ambientTemp) {
+                              return StreamBuilder(
+                                stream:
+                                    context
+                                        .read<BluetoothController>()
+                                        .heartRateStream,
+                                builder: (context, heartRate) {
+                                  return Text(
+                                    '${context.read<WorkoutController>().calculateCoreTemperature(heartRate.data ?? 0, skinTemp.data ?? 0, ambientTemp.data ?? 0)} °C',
+                                    style: TextStyle(
+                                      fontSize: 36,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  );
+                                },
+                              );
+                            },
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -126,23 +128,28 @@ class WorkoutScreen extends HookWidget {
                                   ),
                                 ),
                                 SizedBox(width: 4),
-                                StreamBuilder(
-                                  stream:
-                                      context
-                                          .read<BluetoothController>()
-                                          .heartRateStream,
-                                  builder:
-                                      (context, snapshot) => Text(
-                                        '${snapshot.data}',
-                                        style: TextStyle(
-                                          fontSize: 32,
-                                          fontWeight: FontWeight.bold,
+                                if (context
+                                        .read<BluetoothController>()
+                                        .heartRateStream !=
+                                    null)
+                                  StreamBuilder(
+                                    stream:
+                                        context
+                                            .read<BluetoothController>()
+                                            .heartRateStream,
+                                    builder:
+                                        (context, snapshot) => Text(
+                                          '${snapshot.data}',
+                                          style: TextStyle(
+                                            fontSize: 32,
+                                            fontWeight: FontWeight.bold,
+                                          ),
                                         ),
-                                      ),
-                                ),
+                                  )
+                                else
+                                  Text('No Data'),
                               ],
                             ),
-
                             Text(
                               'Heart Rate',
                               style: TextStyle(
