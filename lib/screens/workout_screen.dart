@@ -63,7 +63,7 @@ class WorkoutScreen extends HookWidget {
                       Consumer<WorkoutController>(
                         builder:
                             (context, controller, child) => Text(
-                              '${controller.coreTemperature} °C',
+                              '${controller.coreTemperature.toStringAsFixed(2)} °C',
                               style: TextStyle(
                                 fontSize: 36,
                                 fontWeight: FontWeight.bold,

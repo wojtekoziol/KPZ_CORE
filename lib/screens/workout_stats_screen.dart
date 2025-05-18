@@ -68,16 +68,22 @@ class WorkoutStatsScreen extends StatelessWidget {
 
     // Define chart's Y display range first
     final double chartMinY = tempData.isNotEmpty ? minTemp - 1 : 0;
-    final double chartMaxY = tempData.isNotEmpty ? maxTemp + 1 : (tempData.isEmpty ? 1 : minTemp + 1);
+    final double chartMaxY =
+        tempData.isNotEmpty
+            ? maxTemp + 1
+            : (tempData.isEmpty ? 1 : minTemp + 1);
 
     // Calculate interval for Y-axis (left titles) - aiming for ~4 labels
     double? leftTitleInterval;
     if (tempData.isNotEmpty) {
       if (maxTemp > minTemp) {
         leftTitleInterval = (maxTemp - minTemp) / 3.0; // 3 intervals = 4 labels
-        if (leftTitleInterval == 0) leftTitleInterval = null; // Should not happen if maxTemp > minTemp
-      } else { // minTemp == maxTemp, or only one data point
-        leftTitleInterval = null; // Let FLChart show the single value or default
+        if (leftTitleInterval == 0)
+          leftTitleInterval = null; // Should not happen if maxTemp > minTemp
+      } else {
+        // minTemp == maxTemp, or only one data point
+        leftTitleInterval =
+            null; // Let FLChart show the single value or default
       }
     } else {
       leftTitleInterval = null; // No data, no interval
@@ -88,39 +94,43 @@ class WorkoutStatsScreen extends StatelessWidget {
     double calculatedBottomTitleInterval;
 
     const double artificialTimespanMs = 60000.0; // 60 seconds
-    const int numberOfIntervals = 4; // For 5 labels (e.g., min, Q1, Q2, Q3, max)
+    const int numberOfIntervals =
+        4; // For 5 labels (e.g., min, Q1, Q2, Q3, max)
 
-    bool needsArtificialTimespan = timestamps.isEmpty ||
-                                   timestamps.length == 1 ||
-                                   (firstTimestampEpochMs != null && 
-                                    lastTimestampEpochMs != null &&
-                                    firstTimestampEpochMs == lastTimestampEpochMs);
+    bool needsArtificialTimespan =
+        timestamps.isEmpty ||
+        timestamps.length == 1 ||
+        (firstTimestampEpochMs != null &&
+            lastTimestampEpochMs != null &&
+            firstTimestampEpochMs == lastTimestampEpochMs);
 
     if (needsArtificialTimespan) {
-      final double centerTimeMs = timestamps.isEmpty
-          ? DateTime.now().millisecondsSinceEpoch.toDouble()
-          : timestamps.first.millisecondsSinceEpoch.toDouble();
+      final double centerTimeMs =
+          timestamps.isEmpty
+              ? DateTime.now().millisecondsSinceEpoch.toDouble()
+              : timestamps.first.millisecondsSinceEpoch.toDouble();
       firstTickX = centerTimeMs - (artificialTimespanMs / 2.0);
       lastTickX = centerTimeMs + (artificialTimespanMs / 2.0);
     } else {
       // Timestamps has at least two distinct values
-      firstTickX = firstTimestampEpochMs!; 
-      lastTickX = lastTimestampEpochMs!;   
+      firstTickX = firstTimestampEpochMs!;
+      lastTickX = lastTimestampEpochMs!;
 
       if (lastTickX <= firstTickX) {
-        final double centerTimeMs = firstTickX; 
+        final double centerTimeMs = firstTickX;
         firstTickX = centerTimeMs - (artificialTimespanMs / 2.0);
         lastTickX = centerTimeMs + (artificialTimespanMs / 2.0);
       }
     }
-    
-    calculatedBottomTitleInterval = (lastTickX - firstTickX) / numberOfIntervals;
+
+    calculatedBottomTitleInterval =
+        (lastTickX - firstTickX) / numberOfIntervals;
 
     if (calculatedBottomTitleInterval <= 0) {
-        final nowMs = DateTime.now().millisecondsSinceEpoch.toDouble();
-        firstTickX = nowMs - (artificialTimespanMs / 2.0);
-        lastTickX = nowMs + (artificialTimespanMs / 2.0);
-        calculatedBottomTitleInterval = artificialTimespanMs / numberOfIntervals;
+      final nowMs = DateTime.now().millisecondsSinceEpoch.toDouble();
+      firstTickX = nowMs - (artificialTimespanMs / 2.0);
+      lastTickX = nowMs + (artificialTimespanMs / 2.0);
+      calculatedBottomTitleInterval = artificialTimespanMs / numberOfIntervals;
     }
 
     return Column(
@@ -156,45 +166,67 @@ class WorkoutStatsScreen extends StatelessWidget {
                     interval: leftTitleInterval, // Use calculated interval
                     getTitlesWidget: (value, meta) {
                       // Respect chart bounds. FLChart might sometimes call with values outside.
-                      if (value < chartMinY || value > chartMaxY) return Container();
+                      if (value < chartMinY || value > chartMaxY)
+                        return Container();
 
                       return SideTitleWidget(
                         axisSide: meta.axisSide,
                         space: 4,
                         child: Text(
-                          value.toStringAsFixed( (leftTitleInterval != null && leftTitleInterval! < 1.0 && leftTitleInterval != 0) ? 1 : 0),
-                          style: const TextStyle(fontSize: 10)
+                          value.toStringAsFixed(
+                            (leftTitleInterval != null &&
+                                    leftTitleInterval < 1.0 &&
+                                    leftTitleInterval != 0)
+                                ? 1
+                                : 0,
+                          ),
+                          style: const TextStyle(fontSize: 10),
                         ),
                       );
                     },
-                  )
+                  ),
                 ),
                 bottomTitles: AxisTitles(
                   sideTitles: SideTitles(
                     showTitles: true,
                     reservedSize: 35,
-                    interval: calculatedBottomTitleInterval, // Use calculated interval
+                    interval:
+                        calculatedBottomTitleInterval, // Use calculated interval
                     getTitlesWidget: (value, meta) {
                       const double toleranceForEpochMs = 1.0; // 1ms tolerance
 
                       for (int i = 0; i <= numberOfIntervals; i++) {
-                        double targetPoint = firstTickX + (i * calculatedBottomTitleInterval);
+                        double targetPoint =
+                            firstTickX + (i * calculatedBottomTitleInterval);
                         // Ensure calculatedBottomTitleInterval is not zero to avoid infinite loop or division by zero if numberOfIntervals is 0 but targetPoint could still be valid (firstTickX)
-                        if (calculatedBottomTitleInterval > 0 && (value - targetPoint).abs() < toleranceForEpochMs) {
-                          final dateTime = DateTime.fromMillisecondsSinceEpoch(value.round());
-                          return SideTitleWidget(
-                            axisSide: meta.axisSide,
-                            space: 4,
-                            child: Text(DateFormat('HH:mm').format(dateTime), style: const TextStyle(fontSize: 10)),
+                        if (calculatedBottomTitleInterval > 0 &&
+                            (value - targetPoint).abs() < toleranceForEpochMs) {
+                          final dateTime = DateTime.fromMillisecondsSinceEpoch(
+                            value.round(),
                           );
-                        } else if (calculatedBottomTitleInterval == 0 && i == 0 && (value - firstTickX).abs() < toleranceForEpochMs) {
-                           // Handle case where interval is 0 (e.g. single data point, artificial span with 1 label target)
-                           // Only show the first label at firstTickX
-                          final dateTime = DateTime.fromMillisecondsSinceEpoch(value.round());
                           return SideTitleWidget(
                             axisSide: meta.axisSide,
                             space: 4,
-                            child: Text(DateFormat('HH:mm').format(dateTime), style: const TextStyle(fontSize: 10)),
+                            child: Text(
+                              DateFormat('HH:mm').format(dateTime),
+                              style: const TextStyle(fontSize: 10),
+                            ),
+                          );
+                        } else if (calculatedBottomTitleInterval == 0 &&
+                            i == 0 &&
+                            (value - firstTickX).abs() < toleranceForEpochMs) {
+                          // Handle case where interval is 0 (e.g. single data point, artificial span with 1 label target)
+                          // Only show the first label at firstTickX
+                          final dateTime = DateTime.fromMillisecondsSinceEpoch(
+                            value.round(),
+                          );
+                          return SideTitleWidget(
+                            axisSide: meta.axisSide,
+                            space: 4,
+                            child: Text(
+                              DateFormat('HH:mm').format(dateTime),
+                              style: const TextStyle(fontSize: 10),
+                            ),
                           );
                         }
                       }

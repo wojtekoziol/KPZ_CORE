@@ -33,10 +33,10 @@ class WorkoutController extends ChangeNotifier {
   Duration get zone3Duration => _zone3Time;
 
   void _startTimer() {
-    _timer = Timer.periodic(Duration(seconds: 1), (timer) async {
+    _timer = Timer.periodic(Duration(seconds: 1), (timer) {
       _elapsedTime += Duration(seconds: 1);
       _updateZoneTimes();
-      await _updateCoreTemperature();
+      _updateCoreTemperature();
       notifyListeners();
     });
   }
@@ -60,12 +60,10 @@ class WorkoutController extends ChangeNotifier {
     return '${time.inMinutes.remainder(60).toString().padLeft(2, '0')}:${(time.inSeconds.remainder(60)).toString().padLeft(2, '0')}';
   }
 
-  Future<void> _updateCoreTemperature() async {
-    int heartRate = await bluetoothController.heartRateStream?.last ?? 0;
-    double skinTemp =
-        await bluetoothController.skinTemperatureStream?.last ?? 0;
-    double ambientTemp =
-        await bluetoothController.ambientTemperatureStream?.last ?? 0;
+  void _updateCoreTemperature() {
+    int heartRate = bluetoothController.currentHeartRate;
+    double skinTemp = bluetoothController.currentSkinTemp;
+    double ambientTemp = bluetoothController.currentAmbientTemp;
 
     _coreTemperature = WorkoutController.calculateCoreTemperature(
       heartRate,

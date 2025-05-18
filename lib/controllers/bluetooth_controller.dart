@@ -27,6 +27,10 @@ class BluetoothController extends ChangeNotifier {
   Stream<double>? _ambientTemperatureStream;
   Stream<double>? get ambientTemperatureStream => _ambientTemperatureStream;
 
+  int currentHeartRate = 0;
+  double currentSkinTemp = 0;
+  double currentAmbientTemp = 0;
+
   Future<void> _init() async {
     if (await FlutterBluePlus.isSupported == false) {
       return;
@@ -102,17 +106,28 @@ class BluetoothController extends ChangeNotifier {
                 "${DateTime.now()} ${String.fromCharCodes(event).split('/')}",
               ),
             );
-            _skinTemperatureStream = characteristic.onValueReceived.map(
-              (value) =>
-                  double.parse(String.fromCharCodes(value).split('/')[0]),
-            );
-            _ambientTemperatureStream = characteristic.onValueReceived.map(
-              (value) =>
-                  double.parse(String.fromCharCodes(value).split('/')[1]),
-            );
-            _heartRateStream = characteristic.onValueReceived.map(
-              (value) => int.parse(String.fromCharCodes(value).split('/')[2]),
-            );
+            _skinTemperatureStream = characteristic.onValueReceived.map((
+              value,
+            ) {
+              currentSkinTemp = double.parse(
+                String.fromCharCodes(value).split('/')[0],
+              );
+              return currentSkinTemp;
+            });
+            _ambientTemperatureStream = characteristic.onValueReceived.map((
+              value,
+            ) {
+              currentAmbientTemp = double.parse(
+                String.fromCharCodes(value).split('/')[1],
+              );
+              return currentAmbientTemp;
+            });
+            _heartRateStream = characteristic.onValueReceived.map((value) {
+              currentHeartRate = int.parse(
+                String.fromCharCodes(value).split('/')[2],
+              );
+              return currentHeartRate;
+            });
 
             await characteristic.setNotifyValue(true);
           }
