@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:kpz_core/controllers/bluetooth_controller.dart';
 import 'package:kpz_core/controllers/workout_controller.dart';
 import 'package:kpz_core/models/workout.dart';
 import 'package:kpz_core/screens/workout_screen.dart';
+import 'package:kpz_core/screens/workout_stats_screen.dart';
 import 'package:provider/provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -13,7 +16,20 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  var workoutHistory = <Workout>[];
+  late Future<List<Workout>> _workoutsFuture;
+
+  @override
+  void initState() {
+    super.initState();
+    _workoutsFuture = _fetchWorkouts();
+  }
+
+  Future<void> _refreshWorkouts() async {
+    setState(() {
+      _workoutsFuture = _fetchWorkouts();
+    });
+    await _workoutsFuture;
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -51,35 +67,46 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-      body: FutureBuilder(
-        future: _fetchWorkouts(),
+      body: FutureBuilder<List<Workout>>(
+        future: _workoutsFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return const Center(child: CircularProgressIndicator());
           } else if (snapshot.hasError) {
             return const Center(child: Text('Error fetching workouts'));
-          } else if (workoutHistory.isEmpty) {
+          } else if (!snapshot.hasData ||
+              snapshot.data == null ||
+              snapshot.data!.isEmpty) {
             return const Center(child: Text('No workouts found'));
           }
-          return ListView.builder(
-            itemCount: workoutHistory.length,
-            itemBuilder: (context, index) {
-              final workout = workoutHistory[index];
-              return Text('Workout $index');
-              // TODO: Implement the workout list item
-              // return ListTile(
-              //   title: Text(workout.name),
-              //   subtitle: Text(workout.date.toString()),
-              //   onTap: () {
-              //     Navigator.push(
-              //       context,
-              //       MaterialPageRoute(
-              //         builder: (context) => WorkoutScreen(workout: workout),
-              //       ),
-              //     );
-              //   },
-              // );
-            },
+          return RefreshIndicator(
+            onRefresh: _refreshWorkouts,
+            child: ListView.builder(
+              itemCount: snapshot.data!.length,
+              itemBuilder: (context, index) {
+                final workout = snapshot.data![index];
+                return ListTile(
+                  title: Text(
+                    DateFormat(
+                      'yyyy-MM-dd – kk:mm',
+                    ).format(workout.timestamps.first),
+                  ),
+                  subtitle: Text(_formatDuration(workout.duration)),
+                  onTap: () async {
+                    final result = await Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) => WorkoutStatsScreen(workout: workout),
+                      ),
+                    );
+                    if (result == true) {
+                      _refreshWorkouts();
+                    }
+                  },
+                );
+              },
+            ),
           );
         },
       ),
@@ -113,7 +140,22 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  Future<void> _fetchWorkouts() async {
-    // TODO: Implement the logic to fetch workouts
+  Future<List<Workout>> _fetchWorkouts() async {
+    final prefs = await SharedPreferences.getInstance();
+    final workoutsString = prefs.getStringList('workouts') ?? [];
+    final workouts =
+        workoutsString.map((e) => Workout.fromJsonString(e)).toList();
+    workouts.sort(
+      (a, b) => a.timestamps.first.isBefore(b.timestamps.first) ? 1 : -1,
+    );
+    return workouts;
+  }
+
+  String _formatDuration(Duration duration) {
+    String twoDigits(int n) => n.toString().padLeft(2, '0');
+    final hours = twoDigits(duration.inHours);
+    final minutes = twoDigits(duration.inMinutes.remainder(60));
+    final seconds = twoDigits(duration.inSeconds.remainder(60));
+    return "$hours:$minutes:$seconds";
   }
 }

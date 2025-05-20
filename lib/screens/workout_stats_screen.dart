@@ -3,6 +3,7 @@ import 'package:kpz_core/models/workout.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'dart:math';
 import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class WorkoutStatsScreen extends StatelessWidget {
   const WorkoutStatsScreen({super.key, required this.workout});
@@ -319,6 +320,13 @@ class WorkoutStatsScreen extends StatelessWidget {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.delete_outline),
+            onPressed: () => _confirmDeleteWorkout(context),
+            tooltip: 'Delete Workout',
+          ),
+        ],
       ),
       body: SingleChildScrollView(
         // Make the column scrollable
@@ -375,5 +383,73 @@ class WorkoutStatsScreen extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Future<void> _confirmDeleteWorkout(BuildContext context) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext dialogContext) {
+        return AlertDialog(
+          title: const Text('Delete Workout?'),
+          content: const Text('Are you sure you want to delete this workout? This action cannot be undone.'),
+          actions: <Widget>[
+            TextButton(
+              child: const Text('Cancel'),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(false); // User cancelled
+              },
+            ),
+            TextButton(
+              child: const Text('Delete', style: TextStyle(color: Colors.red)),
+              onPressed: () {
+                Navigator.of(dialogContext).pop(true); // User confirmed
+              },
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed == true) {
+      await _deleteWorkoutFromPrefs(context);
+    }
+  }
+
+  Future<void> _deleteWorkoutFromPrefs(BuildContext context) async {
+    final prefs = await SharedPreferences.getInstance();
+    final workoutsStringList = prefs.getStringList('workouts') ?? [];
+
+    List<String> updatedWorkoutsStringList = [];
+    bool found = false;
+
+    for (final workoutString in workoutsStringList) {
+      final storedWorkout = Workout.fromJsonString(workoutString);
+      // Assuming timestamps.first and duration together are unique enough
+      if (storedWorkout.timestamps.isNotEmpty &&
+          workout.timestamps.isNotEmpty &&
+          storedWorkout.timestamps.first == workout.timestamps.first &&
+          storedWorkout.duration == workout.duration) {
+        found = true;
+        // Skip adding this workout to the new list, effectively deleting it
+      } else {
+        updatedWorkoutsStringList.add(workoutString);
+      }
+    }
+
+    if (found) {
+      await prefs.setStringList('workouts', updatedWorkoutsStringList);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Workout deleted successfully')),
+        );
+        Navigator.of(context).pop(true); // Pop screen and signal deletion
+      }
+    } else {
+       if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not find workout to delete')),
+        );
+      }
+    }
   }
 }
