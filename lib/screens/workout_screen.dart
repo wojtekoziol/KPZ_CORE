@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:kpz_core/controllers/bluetooth_controller.dart';
 import 'package:kpz_core/controllers/workout_controller.dart';
-import 'package:kpz_core/screens/workout_stats_screen.dart';
 import 'package:kpz_core/widgets/heat_zone_chart.dart';
 import 'package:provider/provider.dart';
 
@@ -195,23 +194,24 @@ class WorkoutScreen extends HookWidget {
     return showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Cancel Workout?'),
-            content: Text(
+          (BuildContext dialogContext) => AlertDialog(
+            title: const Text('Cancel Workout?'),
+            content: const Text(
               'Are you sure you want to cancel the workout? This action cannot be undone.',
             ),
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.of(dialogContext).pop();
                 },
-                child: Text('No'),
+                child: const Text('No'),
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(context).pop(true);
                 },
-                child: Text('Yes'),
+                child: const Text('Yes'),
               ),
             ],
           ),
@@ -225,29 +225,23 @@ class WorkoutScreen extends HookWidget {
     return showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: Text('Stop Workout?'),
-            content: Text('Are you sure you want to stop the workout? '),
+          (BuildContext dialogContext) => AlertDialog(
+            title: const Text('Stop Workout?'),
+            content: const Text('Are you sure you want to stop the workout? '),
             actions: [
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pop();
+                  Navigator.of(dialogContext).pop();
                 },
-                child: Text('No'),
+                child: const Text('No'),
               ),
               TextButton(
                 onPressed: () {
-                  Navigator.of(context).pushAndRemoveUntil(
-                    MaterialPageRoute(
-                      builder:
-                          (context) => WorkoutStatsScreen(
-                            workout: controller.generateWorkoutModel(),
-                          ),
-                    ),
-                    (route) => route.isFirst,
-                  );
+                  final newWorkout = controller.generateWorkoutModel();
+                  Navigator.of(dialogContext).pop();
+                  Navigator.of(context).pop(newWorkout);
                 },
-                child: Text('Yes'),
+                child: const Text('Yes'),
               ),
             ],
           ),

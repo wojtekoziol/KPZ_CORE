@@ -112,13 +112,13 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButton: Consumer<BluetoothController>(
         builder: (context, bluetoothController, child) {
-          // if (bluetoothController.status != BluetoothStatus.connected) {
-          //   return const SizedBox.shrink();
-          // }
+          if (bluetoothController.status != BluetoothStatus.connected) {
+            return const SizedBox.shrink();
+          }
 
           return FloatingActionButton.extended(
-            onPressed: () {
-              Navigator.push(
+            onPressed: () async {
+              final result = await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder:
@@ -131,6 +131,30 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                 ),
               );
+
+              if (result is Workout) {
+                final newWorkout = result;
+
+                setState(() {
+                  _workoutsFuture = _fetchWorkouts();
+                });
+                await _workoutsFuture;
+
+                if (mounted) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (context) => WorkoutStatsScreen(workout: newWorkout),
+                    ),
+                  );
+                }
+              } else if (result == true) {
+                setState(() {
+                  _workoutsFuture = _fetchWorkouts();
+                });
+                await _workoutsFuture;
+              }
             },
             label: const Text('Start Workout'),
             icon: const Icon(Icons.fitness_center),
